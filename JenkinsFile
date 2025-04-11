@@ -1,64 +1,64 @@
-Pipeline{
-	agent any
-	environment{
-		TOMCAT_PATH: 'http://localhost:9000/'
-	}
-	stages{
-		stage('checkout'){
-			steps{
-				 git 'https://github.com/Arjun7049/JavaWebApp.git'
-			}
-		}
-		stage('Build'){
-			steps{
-				bat mvn clean package
-			}
-			post{
-				success{
-					echo 'Build Successful'
-				}		
-			}
-		}
-		stage('Test'){
-			steps{
-				bat mvn test
-			}
-			
-			post{
-				junit '**/target/*.xml'
-			}
-		}
-		stage('Deploy to Tomcat'){
-			steps{
-				withCredentials([usernamePassword(credentialsId:'80d02927-2a11-4ba5-aa9b-fa5387cdfca0', usernameVariable:'TOMCAT_USERNAME',passwordVariable:'TOMCAT_PASSWORD')]){
-						
-						def warFile = "target/*.war"
-                        def tomcatUrl = "http://localhost:9000/manager/text/deploy?path=/JavaApp&update=true"
+pipeline {
+    agent any
 
-                        bat """
-                        curl -v --upload-file "${warFile}" ^
-                             --user "%TOMCAT_USERNAME%:%TOMCAT_PASSWORD%" ^
-                             "${tomcatUrl}"
-                        """
-					}		
-				}
-			
-			post{
-				success{
-						echo 'Deployment Successful!'
-					}
-			}
-		}
-	
-	}
-	post{
-		failure{
-			echo 'Deployment fail'
-		}
-		success{
-				archiveArtifacts artifacts: 'target/*.jar', onlyIfSuccessful : true
-		}
-		
-	}
+    environment {
+        APP_NAME = "JavaApp"
+    }
 
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Arjun7049/JavaWebApp'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                bat 'mvn clean package'
+            }
+            post {
+                success {
+                    echo 'Build Successful'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                bat 'mvn test'
+            }
+            post {
+                success{
+                    echo 'test build successful'
+                }
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                 deploy adapters: [
+                    tomcat9(
+                        credentialsId: '80d02927-2a11-4ba5-aa9b-fa5387cdfca0',
+                        url: 'http://localhost:9000'
+                    )
+                ],
+                contextPath: "/${APP_NAME}",
+                war: "target/*.war"
+            }
+            post {
+                success {
+                    echo 'Deployment Successful!'
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo 'Deployment failed'
+        }
+        success {
+            archiveArtifacts artifacts: 'target/*.war', onlyIfSuccessful: true
+        }
+    }
 }
