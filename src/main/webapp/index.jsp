@@ -1,6 +1,7 @@
 <html>
 <body>
 <h2>Hello World!</h2>
+<h3>New Functionality added</h3>
 <a href="Homepage.jsp">Homepage</a>
 <h3>This is new version</h3>
 <h3>Jenkins File added</h3>
